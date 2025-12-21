@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react'
-import { parseCsvText, Row } from '../lib/parseCsv'
-import { FieldInfo, inferFieldTypes } from '../lib/inferTypes'
+import { parseCsvText } from '../lib/parseCsv'
+import type { Row } from '../lib/parseCsv'
+import { inferFieldTypes } from '../lib/inferTypes'
+import type { FieldInfo } from '../lib/inferTypes'
+
 
 type DatasetState = {
   rows: Row[]
