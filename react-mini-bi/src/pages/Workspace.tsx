@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
 import { useDataset } from '../hooks/useDataset'
+import DataTable from '../components/DataTable'
+
 
 function typeBadge(t: string) {
   const style: React.CSSProperties = {
@@ -85,8 +87,9 @@ export default function Workspace() {
             </div>
           </div>
 
-          <div style={{ marginTop: 16, fontSize: 13, opacity: 0.8 }}>
-            Next: preview table + pagination.
+          <div style={{ marginTop: 16 }}>
+             <h3 style={{ margin: '0 0 8px 0' }}>Preview</h3>
+            <DataTable rows={rows} columns={fields.map((f) => f.name)} pageSize={8} />
           </div>
         </div>
       </div>
