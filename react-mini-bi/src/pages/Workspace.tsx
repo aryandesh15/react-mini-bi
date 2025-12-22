@@ -6,12 +6,25 @@ import ShelfSection from '../components/ShelfSection'
 import { useChartSpec } from '../hooks/useChartSpec'
 import { DndContext } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
-
-
+import { buildChartData } from '../lib/aggregate'
 
 export default function Workspace() {
   const { rows, fields, fieldStats, error, isLoading, loadFromFile, loadFromUrl } = useDataset()
   const { spec, setChartType, setAgg, setBucket, addToShelf, removeFromShelf, moveInShelf, clearAll } = useChartSpec()
+
+  const xField = spec.shelves.x[0]?.field
+  const yField = spec.shelves.y[0]?.field
+  const colorField = spec.shelves.color[0]?.field
+  const sizeField = spec.shelves.size[0]?.field
+
+  const chartData = buildChartData({
+    rows,
+    xField,
+    yField,
+    colorField,
+    sizeField,
+    agg: spec.agg,
+  })
 
   function onDragEnd(event: DragEndEvent) {
     const activeData = event.active.data.current as any
@@ -26,8 +39,6 @@ export default function Workspace() {
 
     addToShelf(shelfId, field)
   }
-
-
 
   useEffect(() => {
     loadFromUrl('/data/sample.csv')
@@ -69,7 +80,6 @@ export default function Workspace() {
       ) : null}
 
       <DndContext onDragEnd={onDragEnd}>
-
         <div style={{ display: 'flex', gap: 16 }}>
           {/* LEFT PANEL */}
           <div style={{ flex: '0 0 340px' }}>
@@ -86,7 +96,12 @@ export default function Workspace() {
                 <select
                   value={spec.chartType}
                   onChange={(e) => setChartType(e.target.value as any)}
-                  style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid #333', background: 'transparent' }}
+                  style={{
+                    padding: '6px 8px',
+                    borderRadius: 8,
+                    border: '1px solid #333',
+                    background: 'transparent',
+                  }}
                 >
                   <option value="bar">Bar</option>
                   <option value="line">Line</option>
@@ -99,7 +114,12 @@ export default function Workspace() {
                 <select
                   value={spec.agg}
                   onChange={(e) => setAgg(e.target.value as any)}
-                  style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid #333', background: 'transparent' }}
+                  style={{
+                    padding: '6px 8px',
+                    borderRadius: 8,
+                    border: '1px solid #333',
+                    background: 'transparent',
+                  }}
                 >
                   <option value="sum">Sum</option>
                   <option value="avg">Avg</option>
@@ -112,7 +132,12 @@ export default function Workspace() {
                 <select
                   value={spec.bucket}
                   onChange={(e) => setBucket(e.target.value as any)}
-                  style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid #333', background: 'transparent' }}
+                  style={{
+                    padding: '6px 8px',
+                    borderRadius: 8,
+                    border: '1px solid #333',
+                    background: 'transparent',
+                  }}
                 >
                   <option value="day">Day</option>
                   <option value="month">Month</option>
@@ -133,7 +158,20 @@ export default function Workspace() {
 
               <div style={{ border: '1px solid #333', borderRadius: 10, padding: 12 }}>
                 <h3 style={{ marginTop: 0 }}>Chart</h3>
-                <div style={{ fontSize: 13, opacity: 0.8 }}>Next: render charts based on shelves.</div>
+
+                {spec.shelves.x.length === 0 || spec.shelves.y.length === 0 ? (
+                  <div style={{ fontSize: 13, opacity: 0.8 }}>
+                    Add at least one field to <b>X</b> and <b>Y</b> to render a chart.
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 13, opacity: 0.8 }}>Data ready: {chartData.length} points</div>
+
+                    <pre style={{ marginTop: 10, fontSize: 12, opacity: 0.85, overflowX: 'auto' }}>
+                      {JSON.stringify(chartData.slice(0, 12), null, 2)}
+                    </pre>
+                  </>
+                )}
 
                 <div style={{ marginTop: 16 }}>
                   <h3 style={{ margin: '0 0 8px 0' }}>Preview</h3>

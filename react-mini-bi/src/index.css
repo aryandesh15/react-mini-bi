@@ -66,3 +66,13 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+select {
+  color: inherit;
+  background-color: transparent;
+}
+
+option {
+  color: #000;
+  background-color: #fff;
+}

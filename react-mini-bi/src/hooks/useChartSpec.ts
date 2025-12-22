@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { readJson, writeJson } from '../lib/storage'
 
 export type ShelfId = 'x' | 'y' | 'color' | 'size'
 export type ChartType = 'bar' | 'line' | 'scatter'
@@ -14,15 +15,47 @@ export type ChartSpec = {
   shelves: Record<ShelfId, ShelfItem[]>
 }
 
+const STORAGE_KEY = 'miniBI.chartSpec'
+
 const emptyShelves: Record<ShelfId, ShelfItem[]> = { x: [], y: [], color: [], size: [] }
 
+const defaultSpec: ChartSpec = {
+  chartType: 'bar',
+  agg: 'sum',
+  bucket: 'month',
+  shelves: emptyShelves,
+}
+
+function sanitizeSpec(v: any): ChartSpec {
+  if (!v || typeof v !== 'object') return defaultSpec
+  const shelves = v.shelves && typeof v.shelves === 'object' ? v.shelves : {}
+  const safeShelves: ChartSpec['shelves'] = {
+    x: Array.isArray(shelves.x) ? shelves.x.filter((it: any) => it?.field).map((it: any) => ({ field: String(it.field) })) : [],
+    y: Array.isArray(shelves.y) ? shelves.y.filter((it: any) => it?.field).map((it: any) => ({ field: String(it.field) })) : [],
+    color: Array.isArray(shelves.color)
+      ? shelves.color.filter((it: any) => it?.field).map((it: any) => ({ field: String(it.field) }))
+      : [],
+    size: Array.isArray(shelves.size)
+      ? shelves.size.filter((it: any) => it?.field).map((it: any) => ({ field: String(it.field) }))
+      : [],
+  }
+
+  const chartType: ChartType = v.chartType === 'line' || v.chartType === 'scatter' ? v.chartType : 'bar'
+  const agg: Agg = v.agg === 'avg' || v.agg === 'count' ? v.agg : 'sum'
+  const bucket: DateBucket = v.bucket === 'day' || v.bucket === 'year' ? v.bucket : 'month'
+
+  return { chartType, agg, bucket, shelves: safeShelves }
+}
+
 export function useChartSpec() {
-  const [spec, setSpec] = useState<ChartSpec>({
-    chartType: 'bar',
-    agg: 'sum',
-    bucket: 'month',
-    shelves: emptyShelves,
+  const [spec, setSpec] = useState<ChartSpec>(() => {
+    const saved = readJson<ChartSpec>(STORAGE_KEY)
+    return sanitizeSpec(saved)
   })
+
+  useEffect(() => {
+    writeJson(STORAGE_KEY, spec)
+  }, [spec])
 
   function setChartType(chartType: ChartType) {
     setSpec((s) => ({ ...s, chartType }))
@@ -40,10 +73,7 @@ export function useChartSpec() {
     setSpec((s) => {
       const exists = s.shelves[shelf].some((it) => it.field === field)
       if (exists) return s
-      return {
-        ...s,
-        shelves: { ...s.shelves, [shelf]: [...s.shelves[shelf], { field }] },
-      }
+      return { ...s, shelves: { ...s.shelves, [shelf]: [...s.shelves[shelf], { field }] } }
     })
   }
 
