@@ -1,18 +1,7 @@
 import { useEffect } from 'react'
 import { useDataset } from '../hooks/useDataset'
 import DataTable from '../components/DataTable'
-
-function typeBadge(t: string) {
-  const style: React.CSSProperties = {
-    fontSize: 12,
-    padding: '2px 8px',
-    borderRadius: 999,
-    border: '1px solid #444',
-    display: 'inline-block',
-    marginLeft: 8,
-  }
-  return <span style={style}>{t}</span>
-}
+import FieldPanel from '../components/FieldPanel'
 
 export default function Workspace() {
   const { rows, fields, fieldStats, error, isLoading, loadFromFile, loadFromUrl } = useDataset()
@@ -57,45 +46,15 @@ export default function Workspace() {
       ) : null}
 
       <div style={{ display: 'flex', gap: 16 }}>
-        <div style={{ flex: '0 0 340px', border: '1px solid #333', borderRadius: 10, padding: 12 }}>
-          <h2 style={{ marginTop: 0 }}>Fields</h2>
-          {fields.length === 0 ? (
-            <p style={{ margin: 0 }}>No fields loaded.</p>
-          ) : (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {fields.map((f) => (
-                <li key={f.name} style={{ padding: '6px 0', borderBottom: '1px solid #222' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-                    <span>{f.name}</span>
-                    {typeBadge(f.type)}
-                  </div>
-
-                  {fieldStats[f.name] ? (
-                    <div style={{ marginTop: 4, fontSize: 12, opacity: 0.75 }}>
-                      <span>
-                        {fieldStats[f.name].nonEmpty} values · {fieldStats[f.name].empty} empty
-                      </span>
-                      {typeof fieldStats[f.name].distinct === 'number' ? (
-                        <span> · {fieldStats[f.name].distinct} distinct</span>
-                      ) : null}
-                      {f.type === 'number' &&
-                      fieldStats[f.name].min !== undefined &&
-                      fieldStats[f.name].max !== undefined ? (
-                        <span>
-                          {' '}
-                          · min {fieldStats[f.name].min} / max {fieldStats[f.name].max}
-                        </span>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          )}
+        {/* LEFT PANEL */}
+        <div style={{ flex: '0 0 340px' }}>
+          <FieldPanel fields={fields} fieldStats={fieldStats} />
         </div>
 
+        {/* RIGHT PANEL */}
         <div style={{ flex: 1, border: '1px solid #333', borderRadius: 10, padding: 12 }}>
           <h2 style={{ marginTop: 0 }}>Dataset</h2>
+
           <div style={{ display: 'flex', gap: 16 }}>
             <div>
               <div style={{ fontSize: 12, opacity: 0.8 }}>Rows</div>
