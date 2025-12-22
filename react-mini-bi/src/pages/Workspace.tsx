@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useDataset } from '../hooks/useDataset'
 import DataTable from '../components/DataTable'
 import FieldPanel from '../components/FieldPanel'
@@ -9,6 +9,8 @@ import type { DragEndEvent } from '@dnd-kit/core'
 import { buildChartData } from '../lib/aggregate'
 import ChartCanvas from '../components/ChartCanvas'
 import { suggestChartType } from '../lib/chartSuggestions'
+import { applyFilters, type Filter } from '../lib/filters'
+import { sortChartData, type SortDir } from '../lib/sort'
 
 export default function Workspace() {
   const { rows, fields, fieldStats, error, isLoading, loadFromFile, loadFromUrl } = useDataset()
@@ -25,6 +27,9 @@ export default function Workspace() {
     moveInShelf,
     clearAll,
   } = useChartSpec()
+
+  const [filters, setFilters] = useState<Filter[]>([])
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
 
   const xField = spec.shelves.x[0]?.field
   const yField = spec.shelves.y[0]?.field
@@ -43,15 +48,20 @@ export default function Workspace() {
     applySuggestedChartType(suggestedChart)
   }, [suggestedChart])
 
-  const chartData = buildChartData({
-    rows,
-    xField,
-    yField,
-    colorField,
-    sizeField,
-    agg: spec.agg,
-    bucket: spec.bucket,
-  })
+  const filteredRows = applyFilters(rows, filters)
+
+  const chartData = sortChartData(
+    buildChartData({
+      rows: filteredRows,
+      xField,
+      yField,
+      colorField,
+      sizeField,
+      agg: spec.agg,
+      bucket: spec.bucket,
+    }),
+    sortDir
+  )
 
   function onDragEnd(event: DragEndEvent) {
     const activeData = event.active.data.current as any
@@ -175,6 +185,60 @@ export default function Workspace() {
               ) : null}
             </div>
 
+            {/* FILTERS + SORT */}
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
+              <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <span style={{ fontSize: 12, opacity: 0.8 }}>Filter field</span>
+                <select
+                  onChange={(e) => {
+                    const f = e.target.value
+                    if (!f) return
+                    setFilters([{ field: f, op: 'contains', value: '' }])
+                  }}
+                  style={{ padding: '4px 6px' }}
+                >
+                  <option value="">—</option>
+                  {fields.map((f) => (
+                    <option key={f.name} value={f.name}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {filters[0] ? (
+                <>
+                  <select
+                    value={filters[0].op}
+                    onChange={(e) => setFilters([{ ...filters[0], op: e.target.value as any }])}
+                    style={{ padding: '4px 6px' }}
+                  >
+                    <option value="contains">contains</option>
+                    <option value="eq">=</option>
+                    <option value="gt">&gt;</option>
+                    <option value="lt">&lt;</option>
+                  </select>
+
+                  <input
+                    value={filters[0].value}
+                    onChange={(e) => setFilters([{ ...filters[0], value: e.target.value }])}
+                    placeholder="value"
+                    style={{ padding: '4px 6px', width: 120 }}
+                  />
+
+                  <button onClick={() => setFilters([])}>Clear</button>
+                </>
+              ) : null}
+
+              <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <span style={{ fontSize: 12, opacity: 0.8 }}>Sort</span>
+                <select value={sortDir} onChange={(e) => setSortDir(e.target.value as SortDir)} style={{ padding: '4px 6px' }}>
+                  <option value="desc">Y ↓</option>
+                  <option value="asc">Y ↑</option>
+                </select>
+              </label>
+            </div>
+
             <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '380px 1fr', gap: 12 }}>
               <ShelfSection
                 spec={spec}
@@ -204,7 +268,7 @@ export default function Workspace() {
 
                 <div style={{ marginTop: 16 }}>
                   <h3 style={{ margin: '0 0 8px 0' }}>Preview</h3>
-                  <DataTable rows={rows} columns={fields.map((f) => f.name)} pageSize={8} />
+                  <DataTable rows={filteredRows} columns={fields.map((f) => f.name)} pageSize={8} />
                 </div>
               </div>
             </div>
