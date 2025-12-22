@@ -7,6 +7,8 @@ import { useChartSpec } from '../hooks/useChartSpec'
 import { DndContext } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
 import { buildChartData } from '../lib/aggregate'
+import ChartCanvas from '../components/ChartCanvas'
+
 
 export default function Workspace() {
   const { rows, fields, fieldStats, error, isLoading, loadFromFile, loadFromUrl } = useDataset()
@@ -24,6 +26,7 @@ export default function Workspace() {
     colorField,
     sizeField,
     agg: spec.agg,
+    bucket: spec.bucket,
   })
 
   function onDragEnd(event: DragEndEvent) {
@@ -167,9 +170,9 @@ export default function Workspace() {
                   <>
                     <div style={{ fontSize: 13, opacity: 0.8 }}>Data ready: {chartData.length} points</div>
 
-                    <pre style={{ marginTop: 10, fontSize: 12, opacity: 0.85, overflowX: 'auto' }}>
-                      {JSON.stringify(chartData.slice(0, 12), null, 2)}
-                    </pre>
+                    <div style={{ marginTop: 10, border: '1px solid #222', borderRadius: 10, padding: 10 }}>
+                      <ChartCanvas data={chartData} chartType={spec.chartType} />
+                    </div>
                   </>
                 )}
 
