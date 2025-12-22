@@ -2,9 +2,14 @@ import { useEffect } from 'react'
 import { useDataset } from '../hooks/useDataset'
 import DataTable from '../components/DataTable'
 import FieldPanel from '../components/FieldPanel'
+import ShelfSection from '../components/ShelfSection'
+import { useChartSpec } from '../hooks/useChartSpec'
+
 
 export default function Workspace() {
   const { rows, fields, fieldStats, error, isLoading, loadFromFile, loadFromUrl } = useDataset()
+  const { spec, setChartType, setAgg, setBucket, addToShelf, removeFromShelf, moveInShelf, clearAll } = useChartSpec()
+
 
   useEffect(() => {
     loadFromUrl('/data/sample.csv')
@@ -53,22 +58,68 @@ export default function Workspace() {
 
         {/* RIGHT PANEL */}
         <div style={{ flex: 1, border: '1px solid #333', borderRadius: 10, padding: 12 }}>
-          <h2 style={{ marginTop: 0 }}>Dataset</h2>
+          <h2 style={{ marginTop: 0 }}>Workspace</h2>
 
-          <div style={{ display: 'flex', gap: 16 }}>
-            <div>
-              <div style={{ fontSize: 12, opacity: 0.8 }}>Rows</div>
-              <div style={{ fontSize: 20 }}>{rows.length}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 12, opacity: 0.8 }}>Fields</div>
-              <div style={{ fontSize: 20 }}>{fields.length}</div>
-            </div>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <span style={{ fontSize: 12, opacity: 0.8 }}>Chart</span>
+              <select
+                value={spec.chartType}
+                onChange={(e) => setChartType(e.target.value as any)}
+                style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid #333', background: 'transparent' }}
+              >
+                <option value="bar">Bar</option>
+                <option value="line">Line</option>
+                <option value="scatter">Scatter</option>
+              </select>
+            </label>
+
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <span style={{ fontSize: 12, opacity: 0.8 }}>Agg</span>
+              <select
+                value={spec.agg}
+                onChange={(e) => setAgg(e.target.value as any)}
+                style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid #333', background: 'transparent' }}
+              >
+                <option value="sum">Sum</option>
+                <option value="avg">Avg</option>
+                <option value="count">Count</option>
+              </select>
+            </label>
+
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <span style={{ fontSize: 12, opacity: 0.8 }}>Bucket</span>
+              <select
+                value={spec.bucket}
+                onChange={(e) => setBucket(e.target.value as any)}
+                style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid #333', background: 'transparent' }}
+              >
+                <option value="day">Day</option>
+                <option value="month">Month</option>
+                <option value="year">Year</option>
+              </select>
+            </label>
           </div>
 
-          <div style={{ marginTop: 16 }}>
-            <h3 style={{ margin: '0 0 8px 0' }}>Preview</h3>
-            <DataTable rows={rows} columns={fields.map((f) => f.name)} pageSize={8} />
+          <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '380px 1fr', gap: 12 }}>
+            <ShelfSection
+              spec={spec}
+              allFields={fields.map((f) => f.name)}
+              onAdd={addToShelf}
+              onRemove={removeFromShelf}
+              onMove={moveInShelf}
+              onClearAll={clearAll}
+            />
+
+            <div style={{ border: '1px solid #333', borderRadius: 10, padding: 12 }}>
+              <h3 style={{ marginTop: 0 }}>Chart</h3>
+              <div style={{ fontSize: 13, opacity: 0.8 }}>Next: render charts based on shelves.</div>
+
+              <div style={{ marginTop: 16 }}>
+                <h3 style={{ margin: '0 0 8px 0' }}>Preview</h3>
+                <DataTable rows={rows} columns={fields.map((f) => f.name)} pageSize={8} />
+              </div>
+            </div>
           </div>
         </div>
       </div>
