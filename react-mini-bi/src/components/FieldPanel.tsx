@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { FieldInfo } from '../lib/inferTypes'
+import { useDraggable } from '@dnd-kit/core'
 
 type FieldStatsShape = Record<
   string,
@@ -29,6 +30,45 @@ function isMeasure(type: FieldInfo['type']) {
   return type === 'number'
 }
 
+function DraggableFieldRow({ f, stats }: { f: FieldInfo; stats?: FieldStatsShape[string] }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `field:${f.name}`,
+    data: { kind: 'field', field: f.name },
+  })
+
+  const style: React.CSSProperties = {
+    padding: '6px 0',
+    borderBottom: '1px solid #222',
+    cursor: 'grab',
+    opacity: isDragging ? 0.5 : 1,
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+  }
+
+  return (
+    <li ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+        <span>{f.name}</span>
+        {typeBadge(f.type)}
+      </div>
+
+      {stats ? (
+        <div style={{ marginTop: 4, fontSize: 12, opacity: 0.75 }}>
+          <span>
+            {stats.nonEmpty} values · {stats.empty} empty
+          </span>
+          {typeof stats.distinct === 'number' ? <span> · {stats.distinct} distinct</span> : null}
+          {f.type === 'number' && stats.min !== undefined && stats.max !== undefined ? (
+            <span>
+              {' '}
+              · min {stats.min} / max {stats.max}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+    </li>
+  )
+}
+
 export default function FieldPanel({ fields, fieldStats }: Props) {
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<FilterMode>('all')
@@ -48,7 +88,6 @@ export default function FieldPanel({ fields, fieldStats }: Props) {
     <div style={{ border: '1px solid #333', borderRadius: 10, padding: 12 }}>
       <h2 style={{ marginTop: 0 }}>Fields</h2>
 
-      {/* Controls */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
         <input
           value={query}
@@ -83,37 +122,12 @@ export default function FieldPanel({ fields, fieldStats }: Props) {
         </select>
       </div>
 
-      {/* Field list */}
       {filteredFields.length === 0 ? (
         <p style={{ margin: 0, fontSize: 13, opacity: 0.8 }}>No matching fields.</p>
       ) : (
         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
           {filteredFields.map((f) => (
-            <li key={f.name} style={{ padding: '6px 0', borderBottom: '1px solid #222' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-                <span>{f.name}</span>
-                {typeBadge(f.type)}
-              </div>
-
-              {fieldStats[f.name] ? (
-                <div style={{ marginTop: 4, fontSize: 12, opacity: 0.75 }}>
-                  <span>
-                    {fieldStats[f.name].nonEmpty} values · {fieldStats[f.name].empty} empty
-                  </span>
-                  {typeof fieldStats[f.name].distinct === 'number' ? (
-                    <span> · {fieldStats[f.name].distinct} distinct</span>
-                  ) : null}
-                  {f.type === 'number' &&
-                  fieldStats[f.name].min !== undefined &&
-                  fieldStats[f.name].max !== undefined ? (
-                    <span>
-                      {' '}
-                      · min {fieldStats[f.name].min} / max {fieldStats[f.name].max}
-                    </span>
-                  ) : null}
-                </div>
-              ) : null}
-            </li>
+            <DraggableFieldRow key={f.name} f={f} stats={fieldStats[f.name]} />
           ))}
         </ul>
       )}

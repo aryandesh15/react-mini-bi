@@ -1,5 +1,6 @@
 import ShelfChip from './ShelfChip'
 import type { ShelfId, ShelfItem } from '../hooks/useChartSpec'
+import { useDroppable } from '@dnd-kit/core'
 
 type Props = {
   title: string
@@ -12,8 +13,22 @@ type Props = {
 }
 
 export default function Shelf({ title, shelfId, items, onAdd, onRemove, onMove, allFields }: Props) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: `shelf:${shelfId}`,
+    data: { kind: 'shelf', shelfId },
+  })
+
   return (
-    <div style={{ border: '1px solid #333', borderRadius: 10, padding: 10 }}>
+    <div
+      ref={setNodeRef}
+      style={{
+        border: '1px solid #333',
+        borderRadius: 10,
+        padding: 10,
+        outline: isOver ? '2px solid #777' : 'none',
+        outlineOffset: 2,
+      }}
+    >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
         <div style={{ fontWeight: 600 }}>{title}</div>
 
@@ -39,7 +54,7 @@ export default function Shelf({ title, shelfId, items, onAdd, onRemove, onMove, 
 
       <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8, minHeight: 38 }}>
         {items.length === 0 ? (
-          <div style={{ fontSize: 12, opacity: 0.7 }}>Drop field here (next step) or use Add…</div>
+          <div style={{ fontSize: 12, opacity: 0.7 }}>Drop field here or use Add…</div>
         ) : (
           items.map((it, idx) => (
             <ShelfChip
