@@ -2,7 +2,6 @@ import { useEffect } from 'react'
 import { useDataset } from '../hooks/useDataset'
 import DataTable from '../components/DataTable'
 
-
 function typeBadge(t: string) {
   const style: React.CSSProperties = {
     fontSize: 12,
@@ -16,7 +15,7 @@ function typeBadge(t: string) {
 }
 
 export default function Workspace() {
-  const { rows, fields, error, isLoading, loadFromFile, loadFromUrl } = useDataset()
+  const { rows, fields, fieldStats, error, isLoading, loadFromFile, loadFromUrl } = useDataset()
 
   useEffect(() => {
     loadFromUrl('/data/sample.csv')
@@ -66,8 +65,29 @@ export default function Workspace() {
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {fields.map((f) => (
                 <li key={f.name} style={{ padding: '6px 0', borderBottom: '1px solid #222' }}>
-                  <span>{f.name}</span>
-                  {typeBadge(f.type)}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+                    <span>{f.name}</span>
+                    {typeBadge(f.type)}
+                  </div>
+
+                  {fieldStats[f.name] ? (
+                    <div style={{ marginTop: 4, fontSize: 12, opacity: 0.75 }}>
+                      <span>
+                        {fieldStats[f.name].nonEmpty} values · {fieldStats[f.name].empty} empty
+                      </span>
+                      {typeof fieldStats[f.name].distinct === 'number' ? (
+                        <span> · {fieldStats[f.name].distinct} distinct</span>
+                      ) : null}
+                      {f.type === 'number' &&
+                      fieldStats[f.name].min !== undefined &&
+                      fieldStats[f.name].max !== undefined ? (
+                        <span>
+                          {' '}
+                          · min {fieldStats[f.name].min} / max {fieldStats[f.name].max}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -88,7 +108,7 @@ export default function Workspace() {
           </div>
 
           <div style={{ marginTop: 16 }}>
-             <h3 style={{ margin: '0 0 8px 0' }}>Preview</h3>
+            <h3 style={{ margin: '0 0 8px 0' }}>Preview</h3>
             <DataTable rows={rows} columns={fields.map((f) => f.name)} pageSize={8} />
           </div>
         </div>
