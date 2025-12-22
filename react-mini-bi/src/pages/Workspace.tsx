@@ -8,16 +8,40 @@ import { DndContext } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
 import { buildChartData } from '../lib/aggregate'
 import ChartCanvas from '../components/ChartCanvas'
-
+import { suggestChartType } from '../lib/chartSuggestions'
 
 export default function Workspace() {
   const { rows, fields, fieldStats, error, isLoading, loadFromFile, loadFromUrl } = useDataset()
-  const { spec, setChartType, setAgg, setBucket, addToShelf, removeFromShelf, moveInShelf, clearAll } = useChartSpec()
+
+  const {
+    spec,
+    setChartType,
+    setChartTypeMode,
+    applySuggestedChartType,
+    setAgg,
+    setBucket,
+    addToShelf,
+    removeFromShelf,
+    moveInShelf,
+    clearAll,
+  } = useChartSpec()
 
   const xField = spec.shelves.x[0]?.field
   const yField = spec.shelves.y[0]?.field
   const colorField = spec.shelves.color[0]?.field
   const sizeField = spec.shelves.size[0]?.field
+
+  const suggestedChart = suggestChartType({
+    fields,
+    xField,
+    yField,
+    colorField,
+    sizeField,
+  })
+
+  useEffect(() => {
+    applySuggestedChartType(suggestedChart)
+  }, [suggestedChart])
 
   const chartData = buildChartData({
     rows,
@@ -95,16 +119,24 @@ export default function Workspace() {
 
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
               <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <span style={{ fontSize: 12, opacity: 0.8 }}>Mode</span>
+                <select
+                  value={spec.chartTypeMode}
+                  onChange={(e) => setChartTypeMode(e.target.value as any)}
+                  style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid #333', background: 'transparent' }}
+                >
+                  <option value="auto">Auto</option>
+                  <option value="manual">Manual</option>
+                </select>
+              </label>
+
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <span style={{ fontSize: 12, opacity: 0.8 }}>Chart</span>
                 <select
                   value={spec.chartType}
                   onChange={(e) => setChartType(e.target.value as any)}
-                  style={{
-                    padding: '6px 8px',
-                    borderRadius: 8,
-                    border: '1px solid #333',
-                    background: 'transparent',
-                  }}
+                  disabled={spec.chartTypeMode === 'auto'}
+                  style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid #333', background: 'transparent' }}
                 >
                   <option value="bar">Bar</option>
                   <option value="line">Line</option>
@@ -117,12 +149,7 @@ export default function Workspace() {
                 <select
                   value={spec.agg}
                   onChange={(e) => setAgg(e.target.value as any)}
-                  style={{
-                    padding: '6px 8px',
-                    borderRadius: 8,
-                    border: '1px solid #333',
-                    background: 'transparent',
-                  }}
+                  style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid #333', background: 'transparent' }}
                 >
                   <option value="sum">Sum</option>
                   <option value="avg">Avg</option>
@@ -135,18 +162,17 @@ export default function Workspace() {
                 <select
                   value={spec.bucket}
                   onChange={(e) => setBucket(e.target.value as any)}
-                  style={{
-                    padding: '6px 8px',
-                    borderRadius: 8,
-                    border: '1px solid #333',
-                    background: 'transparent',
-                  }}
+                  style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid #333', background: 'transparent' }}
                 >
                   <option value="day">Day</option>
                   <option value="month">Month</option>
                   <option value="year">Year</option>
                 </select>
               </label>
+
+              {spec.chartTypeMode === 'auto' ? (
+                <div style={{ fontSize: 12, opacity: 0.75 }}>Suggested: {suggestedChart}</div>
+              ) : null}
             </div>
 
             <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '380px 1fr', gap: 12 }}>

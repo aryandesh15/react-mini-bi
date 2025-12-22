@@ -3,12 +3,14 @@ import { readJson, writeJson } from '../lib/storage'
 
 export type ShelfId = 'x' | 'y' | 'color' | 'size'
 export type ChartType = 'bar' | 'line' | 'scatter'
+export type ChartTypeMode = 'auto' | 'manual'
 export type Agg = 'sum' | 'avg' | 'count'
 export type DateBucket = 'day' | 'month' | 'year'
 
 export type ShelfItem = { field: string }
 
 export type ChartSpec = {
+  chartTypeMode: ChartTypeMode
   chartType: ChartType
   agg: Agg
   bucket: DateBucket
@@ -20,6 +22,7 @@ const STORAGE_KEY = 'miniBI.chartSpec'
 const emptyShelves: Record<ShelfId, ShelfItem[]> = { x: [], y: [], color: [], size: [] }
 
 const defaultSpec: ChartSpec = {
+  chartTypeMode: 'auto',
   chartType: 'bar',
   agg: 'sum',
   bucket: 'month',
@@ -28,10 +31,16 @@ const defaultSpec: ChartSpec = {
 
 function sanitizeSpec(v: any): ChartSpec {
   if (!v || typeof v !== 'object') return defaultSpec
+
   const shelves = v.shelves && typeof v.shelves === 'object' ? v.shelves : {}
+
   const safeShelves: ChartSpec['shelves'] = {
-    x: Array.isArray(shelves.x) ? shelves.x.filter((it: any) => it?.field).map((it: any) => ({ field: String(it.field) })) : [],
-    y: Array.isArray(shelves.y) ? shelves.y.filter((it: any) => it?.field).map((it: any) => ({ field: String(it.field) })) : [],
+    x: Array.isArray(shelves.x)
+      ? shelves.x.filter((it: any) => it?.field).map((it: any) => ({ field: String(it.field) }))
+      : [],
+    y: Array.isArray(shelves.y)
+      ? shelves.y.filter((it: any) => it?.field).map((it: any) => ({ field: String(it.field) }))
+      : [],
     color: Array.isArray(shelves.color)
       ? shelves.color.filter((it: any) => it?.field).map((it: any) => ({ field: String(it.field) }))
       : [],
@@ -41,10 +50,11 @@ function sanitizeSpec(v: any): ChartSpec {
   }
 
   const chartType: ChartType = v.chartType === 'line' || v.chartType === 'scatter' ? v.chartType : 'bar'
+  const chartTypeMode: ChartTypeMode = v.chartTypeMode === 'manual' ? 'manual' : 'auto'
   const agg: Agg = v.agg === 'avg' || v.agg === 'count' ? v.agg : 'sum'
   const bucket: DateBucket = v.bucket === 'day' || v.bucket === 'year' ? v.bucket : 'month'
 
-  return { chartType, agg, bucket, shelves: safeShelves }
+  return { chartTypeMode, chartType, agg, bucket, shelves: safeShelves }
 }
 
 export function useChartSpec() {
@@ -57,8 +67,22 @@ export function useChartSpec() {
     writeJson(STORAGE_KEY, spec)
   }, [spec])
 
+  function setChartTypeMode(chartTypeMode: ChartTypeMode) {
+    setSpec((s) => ({ ...s, chartTypeMode }))
+  }
+
+  // Selecting a chart type explicitly should put you into manual mode
   function setChartType(chartType: ChartType) {
-    setSpec((s) => ({ ...s, chartType }))
+    setSpec((s) => ({ ...s, chartTypeMode: 'manual', chartType }))
+  }
+
+  // Only updates chart type if we're in auto mode
+  function applySuggestedChartType(suggested: ChartType) {
+    setSpec((s) => {
+      if (s.chartTypeMode !== 'auto') return s
+      if (s.chartType === suggested) return s
+      return { ...s, chartType: suggested }
+    })
   }
 
   function setAgg(agg: Agg) {
@@ -100,7 +124,18 @@ export function useChartSpec() {
   }
 
   const value = useMemo(
-    () => ({ spec, setChartType, setAgg, setBucket, addToShelf, removeFromShelf, moveInShelf, clearAll }),
+    () => ({
+      spec,
+      setChartType,
+      setChartTypeMode,
+      applySuggestedChartType,
+      setAgg,
+      setBucket,
+      addToShelf,
+      removeFromShelf,
+      moveInShelf,
+      clearAll,
+    }),
     [spec]
   )
 
