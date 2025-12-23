@@ -11,6 +11,8 @@ import ChartCanvas from '../components/ChartCanvas'
 import { suggestChartType } from '../lib/chartSuggestions'
 import { applyFilters, type Filter } from '../lib/filters'
 import { sortChartData, type SortDir } from '../lib/sort'
+import { useTheme } from '../hooks/useTheme'
+
 
 export default function Workspace() {
   const { rows, fields, fieldStats, error, isLoading, loadFromFile, loadFromUrl } = useDataset()
@@ -43,6 +45,9 @@ export default function Workspace() {
     colorField,
     sizeField,
   })
+
+  const { theme, toggleTheme } = useTheme()
+
 
   useEffect(() => {
     applySuggestedChartType(suggestedChart)
@@ -82,9 +87,25 @@ export default function Workspace() {
   }, [])
 
   return (
-    <div style={{ padding: 24, maxWidth: 1100, margin: '0 auto' }}>
-      <h1 style={{ marginBottom: 8 }}>Mini BI Workspace</h1>
-      <p style={{ marginTop: 0, marginBottom: 16 }}>Load a CSV to begin</p>
+    <div style={{padding: 24, maxWidth: '100%', margin: 0 }}>
+      <div
+        aria-live="polite"
+        style={{ position: 'absolute', left: -9999, top: 'auto', width: 1, height: 1, overflow: 'hidden' }}
+      >
+        {error ? `Error: ${error}` : ''}
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+      <div>
+        <h1 style={{ marginBottom: 8 }}>Mini BI Workspace</h1>
+        <p style={{ marginTop: 0, marginBottom: 16, opacity: 0.85 }}>Load a CSV to begin</p>
+      </div>
+
+  <button onClick={toggleTheme} aria-label="Toggle theme">
+    {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+  </button>
+</div>
+
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16 }}>
         <label>
@@ -232,7 +253,11 @@ export default function Workspace() {
 
               <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <span style={{ fontSize: 12, opacity: 0.8 }}>Sort</span>
-                <select value={sortDir} onChange={(e) => setSortDir(e.target.value as SortDir)} style={{ padding: '4px 6px' }}>
+                <select
+                  value={sortDir}
+                  onChange={(e) => setSortDir(e.target.value as SortDir)}
+                  style={{ padding: '4px 6px' }}
+                >
                   <option value="desc">Y ↓</option>
                   <option value="asc">Y ↑</option>
                 </select>
@@ -260,9 +285,18 @@ export default function Workspace() {
                   <>
                     <div style={{ fontSize: 13, opacity: 0.8 }}>Data ready: {chartData.length} points</div>
 
-                    <div style={{ marginTop: 10, border: '1px solid #222', borderRadius: 10, padding: 10 }}>
+                    <div
+                      style={{
+                        marginTop: 10,
+                        border: '1px solid var(--border)',
+                        borderRadius: 10,
+                        padding: 10,
+                        height: 320,
+                      }}
+                    >
                       <ChartCanvas data={chartData} chartType={spec.chartType} />
                     </div>
+
                   </>
                 )}
 

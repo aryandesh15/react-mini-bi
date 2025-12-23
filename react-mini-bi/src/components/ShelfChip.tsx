@@ -8,6 +8,12 @@ type Props = {
 export default function ShelfChip({ label, onRemove, onMoveLeft, onMoveRight }: Props) {
   return (
     <div
+      tabIndex={0}
+      role="group"
+      aria-label={`Shelf item ${label}`}
+      onKeyDown={(e) => {
+        if (e.key === 'Backspace' || e.key === 'Delete' || e.key === 'Enter') onRemove()
+      }}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
