@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import type { ChartPoint } from '../lib/aggregate'
 import type { ChartType } from '../hooks/useChartSpec'
 
@@ -6,6 +7,7 @@ type Props = {
   chartType: ChartType
   width?: number
   height?: number
+  onSvgRef?: (el: SVGSVGElement | null) => void
 }
 
 function clamp(n: number, lo: number, hi: number) {
@@ -14,13 +16,19 @@ function clamp(n: number, lo: number, hi: number) {
 
 function formatXLabel(v: string) {
   const s = String(v)
-  // If ISO date like 2024-06-05, shorten to 06-05 to avoid long labels
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(5, 10)
   if (s.length > 12) return s.slice(0, 12) + '…'
   return s
 }
 
-export default function ChartCanvas({ data, chartType, width = 520, height = 280 }: Props) {
+export default function ChartCanvas({ data, chartType, width = 520, height = 280, onSvgRef }: Props) {
+  const svgRef = useRef<SVGSVGElement | null>(null)
+
+  useEffect(() => {
+    onSvgRef?.(svgRef.current)
+    return () => onSvgRef?.(null)
+  }, [onSvgRef])
+
   const pad = { l: 44, r: 14, t: 14, b: 56 }
 
   const minPxPerPoint = 64
@@ -56,6 +64,7 @@ export default function ChartCanvas({ data, chartType, width = 520, height = 280
   return (
     <div style={{ width: '100%', height: '100%', overflowX: 'auto' }}>
       <svg
+        ref={svgRef}
         width="100%"
         height="100%"
         viewBox={`0 0 ${vbW} ${vbH}`}
@@ -71,7 +80,6 @@ export default function ChartCanvas({ data, chartType, width = 520, height = 280
         </defs>
 
         <g clipPath="url(#chartClip)">
-          {/* Grid + y ticks */}
           {yTickVals.map((v) => {
             const y = yPos(v)
             return (
@@ -84,20 +92,15 @@ export default function ChartCanvas({ data, chartType, width = 520, height = 280
             )
           })}
 
-          {/* Axes */}
           <line x1={pad.l} y1={pad.t} x2={pad.l} y2={pad.t + innerH} style={axisStyle} />
           <line x1={pad.l} y1={pad.t + innerH} x2={pad.l + innerW} y2={pad.t + innerH} style={axisStyle} />
 
-          {/* X labels (no overflow) */}
           {data.map((d, i) => {
             const step = n > 14 ? Math.ceil(n / 14) : 1
             if (i % step !== 0) return null
 
-            // Clamp x so text can't push outside edges
             const rawX = xPos(i, n)
             const x = clamp(rawX, pad.l + 2, pad.l + innerW - 2)
-
-            // Anchor edges so first/last labels don't overflow horizontally
             const anchor = i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'
 
             return (
@@ -115,7 +118,6 @@ export default function ChartCanvas({ data, chartType, width = 520, height = 280
             )
           })}
 
-          {/* Series */}
           {chartType === 'bar' ? (
             <BarSeries data={data} xPos={xPos} yPos={yPos} padL={pad.l} baseY={pad.t + innerH} innerW={innerW} />
           ) : null}

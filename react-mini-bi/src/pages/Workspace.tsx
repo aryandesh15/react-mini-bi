@@ -12,10 +12,13 @@ import { suggestChartType } from '../lib/chartSuggestions'
 import { applyFilters, type Filter } from '../lib/filters'
 import { sortChartData, type SortDir } from '../lib/sort'
 import { useTheme } from '../hooks/useTheme'
+import { downloadPng, downloadSvg } from '../lib/exportChart'
+
 
 
 export default function Workspace() {
   const { rows, fields, fieldStats, error, isLoading, loadFromFile, loadFromUrl } = useDataset()
+  const [chartSvg, setChartSvg] = useState<SVGSVGElement | null>(null)
 
   const {
     spec,
@@ -283,7 +286,27 @@ export default function Workspace() {
                   </div>
                 ) : (
                   <>
-                    <div style={{ fontSize: 13, opacity: 0.8 }}>Data ready: {chartData.length} points</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                      <div style={{ fontSize: 13, opacity: 0.8 }}>Data ready: {chartData.length} points</div>
+
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          onClick={() => chartSvg && downloadSvg(chartSvg, 'chart.svg')}
+                          disabled={!chartSvg}
+                          aria-label="Export chart as SVG"
+                        >
+                          Export SVG
+                        </button>
+                        <button
+                          onClick={async () => chartSvg && (await downloadPng(chartSvg, 'chart.png'))}
+                          disabled={!chartSvg}
+                          aria-label="Export chart as PNG"
+                        >
+                          Export PNG
+                        </button>
+                      </div>
+                    </div>
+
 
                     <div
                       style={{
@@ -294,7 +317,7 @@ export default function Workspace() {
                         height: 320,
                       }}
                     >
-                      <ChartCanvas data={chartData} chartType={spec.chartType} />
+                      <ChartCanvas data={chartData} chartType={spec.chartType} onSvgRef={setChartSvg} />
                     </div>
 
                   </>
