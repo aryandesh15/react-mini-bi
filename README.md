@@ -173,7 +173,7 @@ Exports reflect the current chart configuration and filters.
 
 ## Author
 
-Developed by **Aryan**
-As part of a junior software engineer take-home assignment.
+* Developed by **Aryan Deshpande**
+* As part of a junior software engineer take-home assignment.
 
 
